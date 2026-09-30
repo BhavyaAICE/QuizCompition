@@ -534,24 +534,29 @@ export const ParticipantDashboard: React.FC = () => {
             <div className="voyage-parchment__content">
               <div className="voyage-parchment__label">Echona Voyage</div>
 
-              <h2 className="voyage-parchment__heading">
-                The Calm Before<br />The Storm
+              <h2 className="voyage-parchment__heading" style={profile.status === 'QUALIFIED' ? { color: '#284C14', textShadow: '0 1px 0 rgba(232,208,154,0.5)' } : {}}>
+                {profile.status === 'QUALIFIED' ? (
+                  <>Congratulations!<br />You Qualified!</>
+                ) : (
+                  <>The Calm Before<br />The Storm</>
+                )}
               </h2>
 
               <div className="voyage-divider">
                 <div className="voyage-divider__line" />
-                <div className="voyage-divider__diamond" />
+                <div className="voyage-divider__diamond" style={profile.status === 'QUALIFIED' ? { background: 'rgba(40, 76, 20, 0.6)' } : {}} />
                 <div className="voyage-divider__line" />
               </div>
 
               <p className="voyage-parchment__captain">
-                Hold fast, Captain <strong>{profile.name}</strong>.
+                {profile.status === 'QUALIFIED' ? 'Excellent work' : 'Hold fast'}, Captain <strong>{profile.name}</strong>.
               </p>
 
               <p className="voyage-parchment__message">
-                The next round has not yet commenced.
-                Keep your eyes on the horizon.
-                The quiz will appear here when the fleet gives the signal.
+                {profile.status === 'QUALIFIED'
+                  ? "You have successfully advanced to the next stage of the voyage! Brace yourself for the upcoming challenge. The quiz will appear here when the fleet gives the signal."
+                  : "The next round has not yet commenced. Keep your eyes on the horizon. The quiz will appear here when the fleet gives the signal."
+                }
               </p>
               
               <div className="voyage-status-embedded">
