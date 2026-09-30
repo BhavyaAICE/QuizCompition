@@ -37,8 +37,12 @@ export const QuizList: React.FC = () => {
     fetchQuizzes();
   }, []);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes`, {
         method: 'POST',
@@ -60,6 +64,8 @@ export const QuizList: React.FC = () => {
       }
     } catch (e) {
       showToast('error', 'NAVIGATION ERROR', 'Network error occurred.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

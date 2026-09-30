@@ -55,8 +55,12 @@ export const RoundManager: React.FC = () => {
     fetchData();
   }, [roundId]);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleCreateQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/rounds/${roundId}/questions`, {
         method: 'POST',
@@ -83,6 +87,8 @@ export const RoundManager: React.FC = () => {
       }
     } catch (err) {
       showToast('error', 'ERROR', 'Network error occurred.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

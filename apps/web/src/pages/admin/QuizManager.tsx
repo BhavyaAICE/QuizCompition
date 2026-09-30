@@ -64,8 +64,13 @@ export const QuizManager: React.FC = () => {
     fetchParticipants();
   }, [quizId]);
 
+  const [isSubmittingRound, setIsSubmittingRound] = useState(false);
+  const [isSubmittingParticipant, setIsSubmittingParticipant] = useState(false);
+
   const handleCreateRound = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingRound) return;
+    setIsSubmittingRound(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizId}/rounds`, {
         method: 'POST',
@@ -89,6 +94,8 @@ export const QuizManager: React.FC = () => {
       }
     } catch (err) {
       showToast('error', 'NAVIGATION ERROR', 'Network error occurred.');
+    } finally {
+      setIsSubmittingRound(false);
     }
   };
 
@@ -136,6 +143,8 @@ export const QuizManager: React.FC = () => {
 
   const handleCreateParticipant = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmittingParticipant) return;
+    setIsSubmittingParticipant(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizId}/participants`, {
         method: 'POST',
@@ -153,6 +162,8 @@ export const QuizManager: React.FC = () => {
       }
     } catch (err) {
       showToast('error', 'ERROR', 'Network error occurred.');
+    } finally {
+      setIsSubmittingParticipant(false);
     }
   };
 
