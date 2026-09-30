@@ -21,22 +21,41 @@ export const AdminLogin: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
-      localStorage.setItem('admin_token', data.token);
-      navigate('/admin/dashboard');
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Login failed');
+        localStorage.setItem('admin_token', data.token);
+        navigate('/admin/dashboard');
+        return; // Success, exit
+      } catch (err: any) {
+        attempts++;
+        // Do not retry if the server explicitly rejected the credentials
+        if (err.message !== 'Failed to fetch' && attempts >= 1) {
+          setError(err.message);
+          setLoading(false);
+          return;
+        }
+        // If it's a network error and we've exhausted attempts
+        if (attempts >= maxAttempts) {
+          setError('Network issue. Please check your connection and try again.');
+          break;
+        }
+        // Wait before retrying (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 800 * attempts));
+      }
     }
+    setLoading(false);
   };
 
   return (
