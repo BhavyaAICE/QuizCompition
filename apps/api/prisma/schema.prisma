@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Admin {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Quiz {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  eventName       String?
+  status          String   @default("DRAFT") // DRAFT, ACTIVE, COMPLETED
+  startDate       DateTime?
+  endDate         DateTime?
+  maxParticipants Int?
+  instructions    String?
+  rounds          Round[]
+  participants    Participant[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Round {
+  id                 String   @id @default(uuid())
+  name               String
+  description        String?
+  quizId             String
+  quiz               Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  
+  // Timer configs in seconds
+  questionTimer      Int?     
+  overallTimer       Int?     
+  
+  marksPerCorrect    Float?
+  marksPerWrong      Float?
+  maxQuestions       Int?
+  
+  randomizeQuestions Boolean  @default(false)
+  randomizeOptions   Boolean  @default(false)
+  allowQuestionNav   Boolean  @default(true)
+  allowPrevQuestion  Boolean  @default(true)
+  
+  status             String   @default("PENDING") // PENDING, SCHEDULED, ACTIVE, PAUSED, COMPLETED
+  scheduledStartTime DateTime?
+  
+  questions          Question[]
+  scores             Score[]
+  sessions           ParticipantSession[]
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Question {
+  id            String   @id @default(uuid())
+  text          String
+  type          String   @default("MCQ") // MCQ, TF
+  marks         Float?
+  negativeMarks Float?
+  explanation   String?
+  
+  roundId       String
+  round         Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  
+  options       QuestionOption[]
+  answers       Answer[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model QuestionOption {
+  id         String   @id @default(uuid())
+  text       String
+  isCorrect  Boolean  @default(false)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers    Answer[]
+}
+
+model Participant {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  plainPassword String?
+  name         String
+  college      String?
+  email        String?
+  phone        String?
+  
+  quizId       String
+  quiz         Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  
+  status       String   @default("ACTIVE") // ACTIVE, ELIMINATED, QUALIFIED
+  
+  answers      Answer[]
+  scores       Score[]
+  sessions     ParticipantSession[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Answer {
+  id               String   @id @default(uuid())
+  participantId    String
+  participant      Participant @relation(fields: [participantId], references: [id])
+  questionId       String
+  question         Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOptionId String?
+  selectedOption   QuestionOption? @relation(fields: [selectedOptionId], references: [id])
+  
+  isCorrect        Boolean  @default(false)
+  marksAwarded     Float    @default(0)
+  submittedAt      DateTime @default(now())
+}
+
+model Score {
+  id                  String   @id @default(uuid())
+  participantId       String
+  participant         Participant @relation(fields: [participantId], references: [id])
+  roundId             String
+  round               Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  
+  totalScore          Float       @default(0)
+  qualificationStatus String      @default("PENDING") // PENDING, QUALIFIED, ELIMINATED
+  
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@unique([participantId, roundId])
+}
+
+model ParticipantSession {
+  id            String   @id @default(uuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id])
+  roundId       String
+  round         Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  
+  startTime     DateTime @default(now())
+  endTime       DateTime?
+  status        String   @default("ACTIVE") // ACTIVE, DISCONNECTED, SUBMITTED
+  lastActiveAt  DateTime @default(now())
+
+  @@unique([participantId, roundId])
+}
+
