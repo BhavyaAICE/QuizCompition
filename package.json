@@ -9,6 +9,9 @@
     "build": "npm run build --workspaces --if-present",
     "start": "concurrently \"npm run start -w apps/api\" \"npm run start -w apps/web\""
   },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  },
   "devDependencies": {
     "concurrently": "^10.0.5"
   }
