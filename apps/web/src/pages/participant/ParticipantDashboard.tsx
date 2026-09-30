@@ -176,7 +176,7 @@ export const ParticipantDashboard: React.FC = () => {
       const headers = { 'Authorization': `Bearer ${token}` };
 
       // 1. Profile
-      const pRes = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/participant/me`, {
+      const pRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/participant/me`, {
         credentials: 'include',
         headers
       });
@@ -196,7 +196,7 @@ export const ParticipantDashboard: React.FC = () => {
       }
 
       // 2. Active Round State
-      const rRes = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/participant/active-round`, {
+      const rRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/participant/active-round`, {
         credentials: 'include',
         headers
       });
@@ -221,7 +221,7 @@ export const ParticipantDashboard: React.FC = () => {
       return;
     }
 
-    const newSocket = io(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/participant`, {
+    const newSocket = io(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/participant`, {
       auth: { token },
       withCredentials: true
     });
@@ -306,7 +306,7 @@ export const ParticipantDashboard: React.FC = () => {
 
   // ── Logout handler (preserved) ──
   const handleLogout = async () => {
-    await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/participant/logout`, { method: 'POST', credentials: 'include' });
+    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/participant/logout`, { method: 'POST', credentials: 'include' });
     navigate('/login');
   };
 

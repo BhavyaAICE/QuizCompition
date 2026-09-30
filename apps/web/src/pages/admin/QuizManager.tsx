@@ -36,7 +36,7 @@ export const QuizManager: React.FC = () => {
 
   const fetchQuizData = async () => {
     try {
-      const res = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizId}`, { credentials: 'include' });
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizId}`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setQuiz(data);
@@ -49,7 +49,7 @@ export const QuizManager: React.FC = () => {
 
   const fetchParticipants = async () => {
     try {
-      const res = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizId}/participants`, { credentials: 'include' });
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizId}/participants`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setParticipants(data);
@@ -67,7 +67,7 @@ export const QuizManager: React.FC = () => {
   const handleCreateRound = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizId}/rounds`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizId}/rounds`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -97,7 +97,7 @@ export const QuizManager: React.FC = () => {
     
     if (deleteConfirm.type === 'round') {
       try {
-        await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/rounds/${deleteConfirm.id}`, { method: 'DELETE', credentials: 'include' });
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/rounds/${deleteConfirm.id}`, { method: 'DELETE', credentials: 'include' });
         showToast('success', 'STAGE REMOVED', 'The stage has been erased from the log.');
         fetchQuizData();
       } catch (e) {
@@ -105,7 +105,7 @@ export const QuizManager: React.FC = () => {
       }
     } else if (deleteConfirm.type === 'participant') {
       try {
-        await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/participants/${deleteConfirm.id}`, { method: 'DELETE', credentials: 'include' });
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/participants/${deleteConfirm.id}`, { method: 'DELETE', credentials: 'include' });
         showToast('success', 'CREW MEMBER DISMISSED', 'Participant removed from manifest.');
         fetchParticipants();
       } catch (e) {
@@ -117,7 +117,7 @@ export const QuizManager: React.FC = () => {
 
   const handleActivateQuiz = async () => {
     try {
-      const res = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -137,7 +137,7 @@ export const QuizManager: React.FC = () => {
   const handleCreateParticipant = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizId}/participants`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizId}/participants`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

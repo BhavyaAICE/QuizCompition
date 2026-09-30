@@ -51,7 +51,7 @@ export const LiveControl: React.FC = () => {
   }, [eventLog]);
 
   const fetchQuizzes = () => {
-    fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes`, { credentials: 'include' })
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         setQuizzes(data);
@@ -72,7 +72,7 @@ export const LiveControl: React.FC = () => {
     fetchQuizzes();
 
     const token = getCookie('admin_token');
-    const newSocket = io(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/admin`, {
+    const newSocket = io(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/admin`, {
       auth: { token },
       withCredentials: true,
       reconnectionAttempts: 10

@@ -59,7 +59,7 @@ export const QuizPlay: React.FC<QuizPlayProps> = ({ round, session, onComplete }
     setSaving(true);
     try {
       const token = localStorage.getItem('participant_token') || '';
-      const res = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/participant/rounds/${round.id}/submit`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/participant/rounds/${round.id}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         credentials: 'include',
@@ -80,7 +80,7 @@ export const QuizPlay: React.FC<QuizPlayProps> = ({ round, session, onComplete }
     const token = localStorage.getItem('participant_token') || '';
     const headers = { 'Authorization': `Bearer ${token}` };
 
-    fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/participant/rounds/${round.id}/questions`, {
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/participant/rounds/${round.id}/questions`, {
       credentials: 'include',
       headers
     })
@@ -167,7 +167,7 @@ export const QuizPlay: React.FC<QuizPlayProps> = ({ round, session, onComplete }
     setSaving(true);
     try {
       const token = localStorage.getItem('participant_token') || '';
-      await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/participant/answer`, {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/participant/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         credentials: 'include',
