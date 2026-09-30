@@ -17,10 +17,20 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    'http://127.0.0.1:5173'
-  ],
+  origin: (origin, callback) => {
+    const allowed = [process.env.FRONTEND_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'];
+    if (!origin || allowed.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      // Forgive trailing slashes in the env var
+      const normalizedEnv = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : '';
+      if (origin === normalizedEnv) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' })); // Allow larger payloads for bulk imports
@@ -40,10 +50,19 @@ app.get('/health', (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: [
-      process.env.FRONTEND_URL || 'http://localhost:5173',
-      'http://127.0.0.1:5173'
-    ],
+    origin: (origin, callback) => {
+      const allowed = [process.env.FRONTEND_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'];
+      if (!origin || allowed.includes(origin) || (typeof origin === 'string' && origin.endsWith('.vercel.app'))) {
+        callback(null, true);
+      } else {
+        const normalizedEnv = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : '';
+        if (origin === normalizedEnv) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   }
