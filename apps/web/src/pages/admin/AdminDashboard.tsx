@@ -16,7 +16,7 @@ export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/admin/dashboard', {
+    fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/admin/dashboard`, {
       credentials: 'include' // Ensure cookies are sent
     })
     .then(res => {

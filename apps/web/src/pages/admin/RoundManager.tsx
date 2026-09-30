@@ -32,17 +32,17 @@ export const RoundManager: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const resQuiz = await fetch(`http://localhost:3001/api/quizzes/${quizId}`, { credentials: 'include' });
+      const resQuiz = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizId}`, { credentials: 'include' });
       if (resQuiz.ok) {
         const quizData = await resQuiz.json();
         const r = quizData.rounds.find((rnd: any) => rnd.id === roundId);
         setRound(r);
       }
 
-      const resQ = await fetch(`http://localhost:3001/api/quizzes/rounds/${roundId}/questions`, { credentials: 'include' });
+      const resQ = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/rounds/${roundId}/questions`, { credentials: 'include' });
       if (resQ.ok) setQuestions(await resQ.json());
 
-      const resS = await fetch(`http://localhost:3001/api/quizzes/rounds/${roundId}/scoreboard`, { credentials: 'include' });
+      const resS = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/rounds/${roundId}/scoreboard`, { credentials: 'include' });
       if (resS.ok) setScoreboard(await resS.json());
 
     } catch (err) {
@@ -58,7 +58,7 @@ export const RoundManager: React.FC = () => {
   const handleCreateQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`http://localhost:3001/api/quizzes/rounds/${roundId}/questions`, {
+      const res = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/rounds/${roundId}/questions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -89,7 +89,7 @@ export const RoundManager: React.FC = () => {
   const handleDeleteConfirmed = async () => {
     if(!deleteConfirm) return;
     try {
-      await fetch(`http://localhost:3001/api/quizzes/questions/${deleteConfirm}`, { method: 'DELETE', credentials: 'include' });
+      await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/questions/${deleteConfirm}`, { method: 'DELETE', credentials: 'include' });
       showToast('success', 'QUESTION REMOVED', 'The question has been struck from the record.');
       fetchData();
     } catch (e) {

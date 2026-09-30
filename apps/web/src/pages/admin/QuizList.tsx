@@ -22,7 +22,7 @@ export const QuizList: React.FC = () => {
   const fetchQuizzes = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3001/api/quizzes', { credentials: 'include' });
+      const res = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setQuizzes(data);
@@ -40,7 +40,7 @@ export const QuizList: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:3001/api/quizzes', {
+      const res = await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -66,7 +66,7 @@ export const QuizList: React.FC = () => {
   const handleDelete = async () => {
     if (!quizToDelete) return;
     try {
-      await fetch(`http://localhost:3001/api/quizzes/${quizToDelete}`, {
+      await fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/quizzes/${quizToDelete}`, {
         method: 'DELETE',
         credentials: 'include'
       });

@@ -13,7 +13,7 @@ export const AdminLayout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
-    fetch('http://localhost:3001/api/auth/logout', { method: 'POST', credentials: 'include' })
+    fetch(`\${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/logout`, { method: 'POST', credentials: 'include' })
       .then(() => navigate('/admin'));
   };
 
