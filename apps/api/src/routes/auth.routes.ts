@@ -37,8 +37,8 @@ router.post('/login', async (req: Request, res: Response) => {
   // Set HTTP-only cookie for secure session handling
   res.cookie('admin_token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: true, // Required for sameSite: 'none'
+    sameSite: 'none', // Allows cross-origin cookies (Vercel -> Render)
     maxAge: 12 * 60 * 60 * 1000 // 12 hours
   });
 
