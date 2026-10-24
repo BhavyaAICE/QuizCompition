@@ -341,7 +341,7 @@ button.pq-voyage-point { cursor: pointer; }
   display: flex;
   align-items: center;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease, filter 0.2s ease;
   text-align: left;
   background:
     repeating-linear-gradient(92deg,
@@ -361,6 +361,7 @@ button.pq-voyage-point { cursor: pointer; }
     inset 0 0 8px rgba(0,0,0,0.2);
   overflow: hidden;
 }
+
 /* Inner bevel */
 .pq-option::before {
   content: '';
@@ -370,7 +371,9 @@ button.pq-voyage-point { cursor: pointer; }
   border-bottom-color: rgba(0, 0, 0, 0.25);
   border-radius: 3px;
   pointer-events: none; z-index: 1;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
+
 /* Corner rivets */
 .pq-option::after {
   content: '';
@@ -381,69 +384,181 @@ button.pq-voyage-point { cursor: pointer; }
     radial-gradient(circle at calc(100% - 8px) 8px, #A98443 1.5px, rgba(141,107,53,0.4) 2px, transparent 3px),
     radial-gradient(circle at 8px calc(100% - 8px), #A98443 1.5px, rgba(141,107,53,0.4) 2px, transparent 3px),
     radial-gradient(circle at calc(100% - 8px) calc(100% - 8px), #A98443 1.5px, rgba(141,107,53,0.4) 2px, transparent 3px);
+  transition: filter 0.2s ease, background 0.2s ease;
 }
+
 /* Hover */
-.pq-option:hover {
-  border-color: #B08A45;
+.pq-option:hover:not(:disabled) {
+  border-color: #C8A359;
   transform: translateY(-1px);
   box-shadow:
-    0 6px 12px rgba(0,0,0,0.55),
+    0 6px 14px rgba(0,0,0,0.55),
+    0 0 10px rgba(176, 138, 69, 0.25),
     inset 0 -3px 0 rgba(0,0,0,0.35),
-    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.14),
     inset 0 0 8px rgba(0,0,0,0.15);
 }
-/* Selected — physical press + richer burgundy */
+
+/* Selected plaque — prominently highlighted with radiant golden brass border & warm illuminated mahogany */
 .pq-option--selected {
   background:
     repeating-linear-gradient(92deg,
-      rgba(255,255,255,0.015) 0px, transparent 1px,
-      transparent 3px, rgba(255,255,255,0.01) 4px),
+      rgba(255,255,255,0.02) 0px, transparent 1px,
+      transparent 3px, rgba(255,255,255,0.015) 4px),
     linear-gradient(180deg,
-      rgba(80, 30, 25, 1) 0%,
-      rgba(62, 24, 18, 1) 40%,
-      rgba(50, 18, 14, 1) 100%);
-  border-color: #D8C49A;
-  transform: translateY(1px);
+      rgba(105, 46, 32, 1) 0%,
+      rgba(82, 32, 22, 1) 45%,
+      rgba(62, 22, 15, 1) 100%);
+  background-color: #4B1E14;
+  border-color: #F0D28E;
+  border-width: 2px;
+  transform: translateY(0px) scale(1.01);
   box-shadow:
-    0 2px 4px rgba(0,0,0,0.6),
-    inset 0 -1px 0 rgba(0,0,0,0.4),
-    inset 0 2px 8px rgba(0,0,0,0.5),
-    inset 0 0 20px rgba(169, 132, 67, 0.12);
-  animation: pq-select-press 0.18s ease-out;
+    0 0 20px rgba(229, 195, 120, 0.55),
+    0 8px 18px rgba(0,0,0,0.7),
+    inset 0 1px 0 rgba(255, 245, 210, 0.4),
+    inset 0 0 24px rgba(229, 195, 120, 0.2);
+  animation: pq-select-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
-@keyframes pq-select-press {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(2px); }
-  100% { transform: translateY(1px); }
+
+@keyframes pq-select-pop {
+  0% { transform: scale(0.985); }
+  60% { transform: scale(1.02); }
+  100% { transform: scale(1.01); }
 }
-.pq-option--selected .pq-option__letter {
-  color: #D8C49A;
+
+/* Selected option inner bevel highlight */
+.pq-option--selected::before {
+  border-color: rgba(240, 210, 142, 0.45);
+  border-top-color: rgba(255, 248, 220, 0.7);
+  border-bottom-color: rgba(141, 107, 53, 0.4);
+  box-shadow: inset 0 0 14px rgba(229, 195, 120, 0.15);
+}
+
+/* Selected corner rivets gleam in bright polished brass */
+.pq-option--selected::after {
+  background:
+    radial-gradient(circle at 8px 8px, #FFF5D0 1.5px, #E5C378 2.5px, transparent 3.5px),
+    radial-gradient(circle at calc(100% - 8px) 8px, #FFF5D0 1.5px, #E5C378 2.5px, transparent 3.5px),
+    radial-gradient(circle at 8px calc(100% - 8px), #FFF5D0 1.5px, #E5C378 2.5px, transparent 3.5px),
+    radial-gradient(circle at calc(100% - 8px) calc(100% - 8px), #FFF5D0 1.5px, #E5C378 2.5px, transparent 3.5px);
+  filter: drop-shadow(0 0 4px rgba(240, 210, 142, 0.8));
+}
+
+/* ── Option Number / Badge Container ── */
+.pq-option__badge {
+  position: relative;
+  z-index: 3;
+  width: 48px;
+  min-width: 48px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 2px;
+  border-right: 1.5px solid rgba(141, 107, 53, 0.3);
+  transition: all 0.22s ease;
+}
+
+.pq-option__badge--selected {
+  border-right-color: rgba(240, 210, 142, 0.65);
+  background: radial-gradient(circle at center, rgba(229, 195, 120, 0.28) 0%, rgba(141, 107, 53, 0.12) 65%, transparent 100%);
 }
 
 /* Option letter */
 .pq-option__letter {
-  position: relative; z-index: 3;
   font-family: 'Cinzel', serif;
   font-size: 1.25rem;
   font-weight: 700;
   color: #B08A45;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.8), 0 0 4px rgba(176,138,69,0.15);
-  width: 36px; min-width: 36px;
-  text-align: center;
-  line-height: 60px;
-  margin-left: 4px;
-  border-right: 1px solid rgba(141, 107, 53, 0.25);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8), 0 0 4px rgba(176,138,69,0.2);
+  line-height: 1;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* When selected: letter shifts to top-left corner as a crisp brass monogram */
+.pq-option--selected .pq-option__letter {
+  position: absolute;
+  top: 6px;
+  left: 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #F5E5C9;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.9), 0 0 4px rgba(240, 210, 142, 0.4);
+}
+
+/* Themed Tick on Option Number */
+.pq-option__tick {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: pq-tick-stamp 0.26s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+.pq-option__tick-icon {
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 0 6px rgba(229, 195, 120, 0.65));
+}
+
+@keyframes pq-tick-stamp {
+  0% {
+    transform: scale(0.3) rotate(-12deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.18) rotate(3deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
 /* Option text */
 .pq-option__text {
-  position: relative; z-index: 3;
+  position: relative;
+  z-index: 3;
   font-family: 'IM Fell English', serif;
   font-size: 1.05rem;
   color: #D8C49A;
   letter-spacing: 0.3px;
   padding-left: 16px;
+  padding-right: 14px;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
 }
-.pq-option--selected .pq-option__text { color: #F0E4CB; }
+
+.pq-option--selected .pq-option__text {
+  color: #FFF9ED;
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 12px rgba(240, 210, 142, 0.35);
+}
+
+/* Selected Right Edge Glow Bar */
+.pq-option__selected-glow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #FFF3C4 0%, #E5C378 50%, #B08A45 100%);
+  box-shadow: 0 0 10px rgba(229, 195, 120, 0.85), -2px 0 8px rgba(229, 195, 120, 0.45);
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+  pointer-events: none;
+  z-index: 4;
+  animation: pq-glow-bar-in 0.22s ease-out both;
+}
+
+@keyframes pq-glow-bar-in {
+  0% { opacity: 0; transform: scaleY(0); }
+  100% { opacity: 1; transform: scaleY(1); }
+}
 
 /* Focus-visible for keyboard accessibility */
 .pq-option:focus-visible {
@@ -829,7 +944,10 @@ button.pq-voyage-point { cursor: pointer; }
   .pq-options { column-gap: 20px; row-gap: 16px; max-width: 720px; }
   .pq-option { height: 54px; }
   .pq-option__text { font-size: 0.95rem; }
-  .pq-option__letter { font-size: 1.1rem; width: 30px; min-width: 30px; line-height: 54px; }
+  .pq-option__badge { width: 42px; min-width: 42px; }
+  .pq-option__letter { font-size: 1.1rem; }
+  .pq-option--selected .pq-option__letter { font-size: 0.65rem; top: 4px; left: 5px; }
+  .pq-option__tick-icon { width: 28px; height: 28px; }
   .pq-btn { width: 150px; height: 44px; font-size: 0.8rem; }
   .pq-voyage-route { width: 35%; }
 }

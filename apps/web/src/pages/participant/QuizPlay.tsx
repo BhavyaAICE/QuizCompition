@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { NauticalCheck } from '../../components/icons/NauticalCheck';
 import './participant-quiz.css';
 
 interface QuizPlayProps {
@@ -337,14 +338,23 @@ export const QuizPlay: React.FC<QuizPlayProps> = ({ round, session, onComplete }
                   return (
                     <button
                       key={opt.id}
+                      type="button"
                       onClick={() => handleSelectOption(currentQ.id, opt.id)}
                       className={`pq-option ${isSelected ? 'pq-option--selected' : ''}`}
                       style={{ '--plaque-delay': `${idx * 70}ms` } as React.CSSProperties}
                       aria-pressed={isSelected}
                       disabled={isTransitioning || isCompleting}
                     >
-                      <span className="pq-option__letter">{optionLetter(idx)}</span>
+                      <div className={`pq-option__badge ${isSelected ? 'pq-option__badge--selected' : ''}`}>
+                        <span className="pq-option__letter">{optionLetter(idx)}</span>
+                        {isSelected && (
+                          <div className="pq-option__tick" aria-hidden="true">
+                            <NauticalCheck className="pq-option__tick-icon" />
+                          </div>
+                        )}
+                      </div>
                       <span className="pq-option__text">{opt.text}</span>
+                      {isSelected && <span className="pq-option__selected-glow" aria-hidden="true" />}
                     </button>
                   );
                 })}
