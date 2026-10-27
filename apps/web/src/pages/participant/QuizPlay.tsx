@@ -23,7 +23,7 @@ const ConfirmModal: React.FC<{
       <p className="pq-modal__message">{message}</p>
       <div className="pq-modal__actions">
         <button className="pq-btn pq-btn--cancel" onClick={onCancel}>Cancel</button>
-        <button className="pq-btn pq-btn--confirm" onClick={onConfirm}>Confirm</button>
+        <button className="pq-btn pq-btn--confirm" onClick={onConfirm}>Confirm Submit</button>
       </div>
     </div>
   </div>
@@ -55,8 +55,19 @@ export const QuizPlay: React.FC<QuizPlayProps> = ({ round, session, onComplete }
   const TIMER_WARNING = 120; // 2 minutes
   const TIMER_CRITICAL = 60;  // 1 minute
 
-  // ── Submit round (preserved) ──
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isSubmittedRef = useRef(false);
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  // ── Submit round (stops timer immediately) ──
   const doSubmitRound = useCallback(async () => {
+    stopTimer();
     setSaving(true);
     try {
       const token = localStorage.getItem('participant_token') || '';
@@ -64,17 +75,36 @@ export const QuizPlay: React.FC<QuizPlayProps> = ({ round, session, onComplete }
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         credentials: 'include',
-        body: JSON.stringify({ roundId: round.id })
+        body: JSON.stringify({ roundId: round.id, clientSubmittedAt: new Date().toISOString() })
       });
       if (res.ok) {
         onComplete();
+      } else {
+        isSubmittedRef.current = false;
+        setIsCompleting(false);
       }
     } catch (err) {
       console.error(err);
+      isSubmittedRef.current = false;
+      setIsCompleting(false);
     } finally {
       setSaving(false);
     }
-  }, [round.id, onComplete]);
+  }, [round.id, onComplete, stopTimer]);
+
+  const resumeTimer = useCallback(() => {
+    if (isSubmittedRef.current || timerRef.current || !round.overallTimer) return;
+    timerRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev && prev <= 1) {
+          stopTimer();
+          doSubmitRound();
+          return 0;
+        }
+        return prev ? prev - 1 : 0;
+      });
+    }, 1000);
+  }, [round.overallTimer, doSubmitRound, stopTimer]);
 
   // ── Fetch questions (preserved) ──
   useEffect(() => {
@@ -96,9 +126,9 @@ export const QuizPlay: React.FC<QuizPlayProps> = ({ round, session, onComplete }
       });
   }, [round.id]);
 
-  // ── Timer logic (preserved, NEVER paused) ──
+  // ── Timer logic (stops immediately on submit) ──
   useEffect(() => {
-    if (round.overallTimer) {
+    if (round.overallTimer && !isSubmittedRef.current) {
       const start = new Date(session.startTime).getTime();
       const now = new Date().getTime();
       const elapsed = Math.floor((now - start) / 1000);
@@ -107,14 +137,19 @@ export const QuizPlay: React.FC<QuizPlayProps> = ({ round, session, onComplete }
       setTimeLeft(remaining);
 
       if (remaining === 0) {
+        stopTimer();
         doSubmitRound();
         return;
       }
 
-      const timer = setInterval(() => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+
+      timerRef.current = setInterval(() => {
         setTimeLeft(prev => {
           if (prev && prev <= 1) {
-            clearInterval(timer);
+            stopTimer();
             doSubmitRound();
             return 0;
           }
@@ -122,9 +157,14 @@ export const QuizPlay: React.FC<QuizPlayProps> = ({ round, session, onComplete }
         });
       }, 1000);
 
-      return () => clearInterval(timer);
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      };
     }
-  }, [round.overallTimer, session.startTime, doSubmitRound]);
+  }, [round.overallTimer, session.startTime, doSubmitRound, stopTimer]);
 
   // ── Phase 2: One-shot entrance ──
   useEffect(() => {
@@ -188,18 +228,28 @@ export const QuizPlay: React.FC<QuizPlayProps> = ({ round, session, onComplete }
     validationTimer.current = setTimeout(() => setValidationMsg(''), 3000);
   };
 
-  // Phase 3: Enhanced submit with completion transition
+  // Submit with immediate timer stop and zero delay
   const handleSubmitRound = () => {
-    if (transitionLocked.current) return;
+    if (transitionLocked.current || isSubmittedRef.current) return;
+    // Halt timer countdown immediately when submit is clicked
+    stopTimer();
     setShowConfirm(true);
   };
 
-  const doConfirmSubmit = async () => {
+  const handleCancelSubmit = () => {
     setShowConfirm(false);
+    // If cancelled, resume timer countdown
+    resumeTimer();
+  };
+
+  const doConfirmSubmit = async () => {
+    if (isSubmittedRef.current) return;
+    isSubmittedRef.current = true;
+    setShowConfirm(false);
+    stopTimer();
     setIsCompleting(true);
 
-    // Short completion pause for visual feedback
-    await new Promise(r => setTimeout(r, reducedMotion.current ? 100 : 800));
+    // Direct submit without any artificial timeout
     await doSubmitRound();
   };
 
@@ -428,7 +478,7 @@ export const QuizPlay: React.FC<QuizPlayProps> = ({ round, session, onComplete }
           title="ANCHOR YOUR ANSWERS"
           message="Are you sure you want to submit your answers? Once anchored, they cannot be changed."
           onConfirm={doConfirmSubmit}
-          onCancel={() => setShowConfirm(false)}
+          onCancel={handleCancelSubmit}
         />
       )}
     </div>

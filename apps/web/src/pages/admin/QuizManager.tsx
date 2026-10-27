@@ -310,6 +310,16 @@ export const QuizManager: React.FC = () => {
                   }}>
                     DOWNLOAD CREDENTIALS
                   </EchonaButton>
+                  <a
+                    href="/sample_participants.xlsx"
+                    download="sample_participants.xlsx"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 border border-[#8B5E34]/60 hover:border-[#C7A04A] bg-[#17100C]/80 hover:bg-[#2B1710] text-[#C7A04A] hover:text-[#F4E7C7] text-xs font-bold tracking-wider uppercase rounded-sm transition-all shadow-sm"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    SAMPLE EXCEL
+                  </a>
                   <EchonaButton variant="secondary" onClick={() => setImportModalOpen(true)}>
                     IMPORT CREW MANIFEST
                   </EchonaButton>

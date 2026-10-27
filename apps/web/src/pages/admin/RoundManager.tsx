@@ -114,11 +114,30 @@ export const RoundManager: React.FC = () => {
     setNewQuestion({ ...newQuestion, options: opts });
   };
 
+  const formatTimeTaken = (seconds: number | null | undefined): string => {
+    if (seconds === null || seconds === undefined || isNaN(seconds)) return '—';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    if (m === 0) return `${s}s`;
+    return `${m}m ${s.toString().padStart(2, '0')}s`;
+  };
+
+  const formatSubmitTime = (dateStr: string | null | undefined): string => {
+    if (!dateStr) return '—';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '—';
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch {
+      return '—';
+    }
+  };
+
   const exportResults = () => {
     if (scoreboard.length === 0) return;
-    const header = "Rank,Username,Name,College,Total Score,Status\n";
+    const header = "Rank,Username,Name,College,Total Score,Time Taken,Submit Time,Status\n";
     const rows = scoreboard.map((s, index) => 
-      `${index + 1},${s.participant.username},"${s.participant.name}","${s.participant.college}",${s.totalScore},${s.qualificationStatus}`
+      `${index + 1},${s.participant.username},"${s.participant.name || ''}","${s.participant.college || ''}",${s.totalScore},"${formatTimeTaken(s.timeTaken)}","${s.submittedAt ? new Date(s.submittedAt).toLocaleString() : '—'}",${s.qualificationStatus}`
     ).join("\n");
     
     const blob = new Blob([header + rows], { type: 'text/csv' });
@@ -175,6 +194,16 @@ export const RoundManager: React.FC = () => {
                 Stage Questions <span className="text-[#8B5E34] text-sm">({questions.length})</span>
               </h3>
               <div className="flex gap-3">
+                <a
+                  href="/sample_questions.xlsx"
+                  download="sample_questions.xlsx"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 border border-[#8B5E34]/60 hover:border-[#C7A04A] bg-[#17100C]/80 hover:bg-[#2B1710] text-[#C7A04A] hover:text-[#F4E7C7] text-xs font-bold tracking-wider uppercase rounded-sm transition-all shadow-sm"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  SAMPLE EXCEL
+                </a>
                 <EchonaButton variant="secondary" onClick={() => setImportModalOpen(true)}>
                   IMPORT QUESTIONS
                 </EchonaButton>
@@ -301,13 +330,14 @@ export const RoundManager: React.FC = () => {
                     <th className="p-4 text-[10px] font-bold text-[#C7A04A] uppercase tracking-[0.2em] w-16">Rank</th>
                     <th className="p-4 text-[10px] font-bold text-[#C7A04A] uppercase tracking-[0.2em]">Crew Member</th>
                     <th className="p-4 text-[10px] font-bold text-[#C7A04A] uppercase tracking-[0.2em]">Institution</th>
+                    <th className="p-4 text-[10px] font-bold text-[#C7A04A] uppercase tracking-[0.2em] text-center">Time Taken</th>
                     <th className="p-4 text-[10px] font-bold text-[#C7A04A] uppercase tracking-[0.2em] text-right">Score</th>
                   </tr>
                 </thead>
                 <tbody>
                   {scoreboard.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="p-12">
+                      <td colSpan={5} className="p-12">
                         <EchonaEmptyState title="NO RECORDS FOUND" description="Crew members must complete the stage for records to appear." />
                       </td>
                     </tr>
@@ -325,6 +355,16 @@ export const RoundManager: React.FC = () => {
                           </div>
                         </td>
                         <td className="p-4 text-xs font-semibold text-[#E7D19A] tracking-wider uppercase">{score.participant.college || '-'}</td>
+                        <td className="p-4 text-center">
+                          <div className="text-sm font-pirate text-[#F4E7C7] tracking-wider">
+                            {formatTimeTaken(score.timeTaken)}
+                          </div>
+                          {score.submittedAt && (
+                            <div className="text-[10px] text-[#8B5E34] font-bold tracking-wider">
+                              {formatSubmitTime(score.submittedAt)}
+                            </div>
+                          )}
+                        </td>
                         <td className="p-4 text-right">
                           <span className="text-2xl font-pirate text-[#10B981]">{score.totalScore}</span>
                         </td>

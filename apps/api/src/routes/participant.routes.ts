@@ -314,14 +314,28 @@ router.post('/rounds/:roundId/submit', requireParticipant, async (req: Request, 
 
   // Mark session as submitted
   const session = await prisma.participantSession.findFirst({
-    where: { participantId: p.id, roundId: String(req.params.roundId), status: 'ACTIVE' },
+    where: { 
+      participantId: p.id, 
+      roundId: String(req.params.roundId), 
+      status: { in: ['ACTIVE', 'DISCONNECTED'] } 
+    },
   });
 
-  if (!session) return res.status(403).json({ error: 'No active session to submit' });
+  if (!session) {
+    const alreadySubmitted = await prisma.participantSession.findFirst({
+      where: { participantId: p.id, roundId: String(req.params.roundId), status: 'SUBMITTED' }
+    });
+    if (alreadySubmitted) {
+      return res.json({ message: 'Round already submitted' });
+    }
+    return res.status(403).json({ error: 'No active session to submit' });
+  }
+
+  const endTime = req.body?.clientSubmittedAt ? new Date(req.body.clientSubmittedAt) : new Date();
 
   await prisma.participantSession.update({
     where: { id: session.id },
-    data: { status: 'SUBMITTED', endTime: new Date() },
+    data: { status: 'SUBMITTED', endTime },
   });
 
   // Calculate total score for this round
@@ -349,6 +363,31 @@ router.post('/rounds/:roundId/submit', requireParticipant, async (req: Request, 
         totalScore,
       },
     });
+  }
+
+  // Broadcast updated live stats to admin immediately
+  try {
+    const io = req.app.get('io');
+    if (io) {
+      const roundIdStr = String(req.params.roundId);
+      const totalParticipants = await prisma.participantSession.count({
+        where: { roundId: roundIdStr },
+      });
+      const submitted = await prisma.participantSession.count({
+        where: { roundId: roundIdStr, status: 'SUBMITTED' },
+      });
+      const active = await prisma.participantSession.count({
+        where: { roundId: roundIdStr, status: 'ACTIVE' },
+      });
+      io.of('/admin').emit('round:stats', {
+        roundId: roundIdStr,
+        totalParticipants,
+        submitted,
+        active,
+      });
+    }
+  } catch (err) {
+    console.error('Error broadcasting round stats to admin:', err);
   }
 
   res.json({ message: 'Round submitted', totalScore });

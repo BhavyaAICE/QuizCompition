@@ -312,12 +312,61 @@ router.delete('/participants/:id', async (req: Request, res: Response) => {
 // ═══════════════════════════════════════════════════════
 
 router.get('/rounds/:roundId/scoreboard', async (req: Request, res: Response) => {
-  const scores = await prisma.score.findMany({
-    where: { roundId: String(req.params.roundId) },
-    include: { participant: { select: { id: true, username: true, name: true, college: true, status: true } } },
-    orderBy: { totalScore: 'desc' },
+  const roundId = String(req.params.roundId);
+  const [scores, sessions] = await Promise.all([
+    prisma.score.findMany({
+      where: { roundId },
+      include: { participant: { select: { id: true, username: true, name: true, college: true, status: true } } },
+    }),
+    prisma.participantSession.findMany({
+      where: { roundId },
+      select: { participantId: true, startTime: true, endTime: true, status: true },
+    }),
+  ]);
+
+  const sessionMap = new Map(sessions.map(s => [s.participantId, s]));
+
+  const enrichedScores = scores.map(score => {
+    const session = sessionMap.get(score.participantId);
+    let timeTaken: number | null = null;
+    let submittedAt: string | null = null;
+
+    if (session?.endTime && session?.startTime) {
+      const startMs = new Date(session.startTime).getTime();
+      const endMs = new Date(session.endTime).getTime();
+      timeTaken = Math.max(0, Math.round((endMs - startMs) / 1000));
+      submittedAt = new Date(session.endTime).toISOString();
+    } else if (session?.endTime) {
+      submittedAt = new Date(session.endTime).toISOString();
+    }
+
+    return {
+      ...score,
+      timeTaken,
+      submittedAt,
+      sessionStatus: session?.status || 'UNKNOWN',
+    };
   });
-  res.json(scores);
+
+  // Ranking:
+  // 1. Total score (descending)
+  // 2. Timing factor tie-breaker: timeTaken (ascending - faster completion ranks higher)
+  // 3. Timing factor tie-breaker: submittedAt (ascending - earlier submit ranks higher)
+  enrichedScores.sort((a, b) => {
+    if (b.totalScore !== a.totalScore) {
+      return b.totalScore - a.totalScore;
+    }
+    const timeA = a.timeTaken != null ? a.timeTaken : Infinity;
+    const timeB = b.timeTaken != null ? b.timeTaken : Infinity;
+    if (timeA !== timeB) {
+      return timeA - timeB;
+    }
+    const subA = a.submittedAt ? new Date(a.submittedAt).getTime() : Infinity;
+    const subB = b.submittedAt ? new Date(b.submittedAt).getTime() : Infinity;
+    return subA - subB;
+  });
+
+  res.json(enrichedScores);
 });
 
 // Manually set qualification status for a participant in a round
@@ -333,31 +382,73 @@ router.put('/scores/:scoreId', async (req: Request, res: Response) => {
 // Bulk qualify/eliminate based on top N or cutoff score
 router.post('/rounds/:roundId/evaluate', async (req: Request, res: Response) => {
   const { topN, cutoffScore } = req.body;
+  const roundId = String(req.params.roundId);
 
-  const scores = await prisma.score.findMany({
-    where: { roundId: String(req.params.roundId) },
-    orderBy: { totalScore: 'desc' },
+  const [scores, sessions] = await Promise.all([
+    prisma.score.findMany({
+      where: { roundId },
+    }),
+    prisma.participantSession.findMany({
+      where: { roundId },
+      select: { participantId: true, startTime: true, endTime: true, status: true },
+    }),
+  ]);
+
+  const sessionMap = new Map(sessions.map(s => [s.participantId, s]));
+
+  const enrichedScores = scores.map(score => {
+    const session = sessionMap.get(score.participantId);
+    let timeTaken: number | null = null;
+    let submittedAt: string | null = null;
+
+    if (session?.endTime && session?.startTime) {
+      const startMs = new Date(session.startTime).getTime();
+      const endMs = new Date(session.endTime).getTime();
+      timeTaken = Math.max(0, Math.round((endMs - startMs) / 1000));
+      submittedAt = new Date(session.endTime).toISOString();
+    }
+
+    return {
+      ...score,
+      timeTaken,
+      submittedAt,
+    };
+  });
+
+  // Timing factor ranking tie-breaker for Top N qualification
+  enrichedScores.sort((a, b) => {
+    if (b.totalScore !== a.totalScore) {
+      return b.totalScore - a.totalScore;
+    }
+    const timeA = a.timeTaken != null ? a.timeTaken : Infinity;
+    const timeB = b.timeTaken != null ? b.timeTaken : Infinity;
+    if (timeA !== timeB) {
+      return timeA - timeB;
+    }
+    const subA = a.submittedAt ? new Date(a.submittedAt).getTime() : Infinity;
+    const subB = b.submittedAt ? new Date(b.submittedAt).getTime() : Infinity;
+    return subA - subB;
   });
 
   let qualified = 0;
   let eliminated = 0;
 
-  for (let i = 0; i < scores.length; i++) {
+  for (let i = 0; i < enrichedScores.length; i++) {
     let status = 'ELIMINATED';
     if (topN && i < topN) {
       status = 'QUALIFIED';
-    } else if (cutoffScore !== undefined && scores[i].totalScore >= cutoffScore) {
+    } else if (cutoffScore !== undefined && enrichedScores[i].totalScore >= cutoffScore) {
       status = 'QUALIFIED';
     }
 
     await prisma.score.update({
-      where: { id: scores[i].id },
+      where: { id: enrichedScores[i].id },
       data: { qualificationStatus: status },
     });
 
     // Also update participant status
     await prisma.participant.update({
-      where: { id: scores[i].participantId },
+      where: { id: enrichedScores[i].participantId },
       data: { status: status === 'QUALIFIED' ? 'QUALIFIED' : 'ELIMINATED' },
     });
 
@@ -368,7 +459,7 @@ router.post('/rounds/:roundId/evaluate', async (req: Request, res: Response) => 
   // Notify participants to refresh their screens
   const io = req.app.get('io');
   if (io) {
-    const round = await prisma.round.findUnique({ where: { id: String(req.params.roundId) } });
+    const round = await prisma.round.findUnique({ where: { id: roundId } });
     if (round) {
       io.of('/participant').to(`quiz:${round.quizId}`).emit('round:ended', { roundId: round.id });
     }

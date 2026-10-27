@@ -479,7 +479,10 @@ export const ParticipantDashboard: React.FC = () => {
       <QuizPlay
         round={roundState.round}
         session={roundState.session}
-        onComplete={fetchStatus}
+        onComplete={() => {
+          setRoundState((prev: any) => ({ ...prev, status: 'SUBMITTED' }));
+          fetchStatus();
+        }}
       />
     );
   }

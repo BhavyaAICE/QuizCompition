@@ -47,6 +47,42 @@ export const ScoreboardModal: React.FC<ScoreboardModalProps> = ({ roundId, round
       });
   };
 
+  const formatTimeTaken = (seconds: number | null | undefined): string => {
+    if (seconds === null || seconds === undefined || isNaN(seconds)) return '—';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    if (m === 0) return `${s}s`;
+    return `${m}m ${s.toString().padStart(2, '0')}s`;
+  };
+
+  const formatSubmitTime = (dateStr: string | null | undefined): string => {
+    if (!dateStr) return '—';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '—';
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch {
+      return '—';
+    }
+  };
+
+  const exportResults = () => {
+    if (scores.length === 0) return;
+    const header = "Rank,Username,Name,College,Total Score,Time Taken,Submit Time,Status\n";
+    const rows = scores.map((s, index) => 
+      `${index + 1},${s.participant?.username || ''},"${s.participant?.name || ''}","${s.participant?.college || ''}",${s.totalScore},"${formatTimeTaken(s.timeTaken)}","${s.submittedAt ? new Date(s.submittedAt).toLocaleString() : '—'}",${s.qualificationStatus || 'PENDING'}`
+    ).join("\n");
+    
+    const blob = new Blob([header + rows], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${roundName || 'Round'}_Results.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    showToast('success', 'LOG EXPORTED', 'The scoreboard has been downloaded as a manifest.');
+  };
+
   useEffect(() => {
     fetchScores();
   }, [roundId]);
@@ -110,7 +146,17 @@ export const ScoreboardModal: React.FC<ScoreboardModalProps> = ({ roundId, round
               </h2>
             </div>
           </div>
-          <button onClick={onClose} className="text-[#C7A04A] hover:text-[#F4E7C7] text-2xl leading-none">&times;</button>
+          <div className="flex items-center gap-4">
+            <EchonaButton 
+              variant="secondary" 
+              onClick={exportResults} 
+              disabled={scores.length === 0} 
+              className="text-xs px-3 py-1.5"
+            >
+              EXPORT CSV
+            </EchonaButton>
+            <button onClick={onClose} className="text-[#C7A04A] hover:text-[#F4E7C7] text-2xl leading-none">&times;</button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto p-6 relative">
@@ -129,6 +175,7 @@ export const ScoreboardModal: React.FC<ScoreboardModalProps> = ({ roundId, round
                   <th className="py-3 text-[#C7A04A] text-xs font-bold tracking-[0.2em] uppercase">Rank</th>
                   <th className="py-3 text-[#C7A04A] text-xs font-bold tracking-[0.2em] uppercase">Crew Name</th>
                   <th className="py-3 text-[#C7A04A] text-xs font-bold tracking-[0.2em] uppercase">College</th>
+                  <th className="py-3 text-[#C7A04A] text-xs font-bold tracking-[0.2em] uppercase text-center">Time Taken</th>
                   <th className="py-3 text-[#C7A04A] text-xs font-bold tracking-[0.2em] uppercase">Score</th>
                   <th className="py-3 text-[#C7A04A] text-xs font-bold tracking-[0.2em] uppercase">Status</th>
                 </tr>
@@ -139,6 +186,16 @@ export const ScoreboardModal: React.FC<ScoreboardModalProps> = ({ roundId, round
                     <td className="py-3 text-[#E7D19A] text-lg font-pirate">#{index + 1}</td>
                     <td className="py-3 text-[#F4E7C7] font-bold tracking-wider">{score.participant?.name || score.participant?.username}</td>
                     <td className="py-3 text-[#E7D19A]/60 text-xs uppercase tracking-wider">{score.participant?.college || 'Unknown'}</td>
+                    <td className="py-3 text-center">
+                      <div className="text-sm font-pirate text-[#F4E7C7] tracking-wider">
+                        {formatTimeTaken(score.timeTaken)}
+                      </div>
+                      {score.submittedAt && (
+                        <div className="text-[10px] text-[#8B5E34] font-bold tracking-wider">
+                          {formatSubmitTime(score.submittedAt)}
+                        </div>
+                      )}
+                    </td>
                     <td className="py-3 text-[#C7A04A] text-lg font-pirate">{score.totalScore}</td>
                     <td className="py-3">
                       <span className={`px-2 py-1 text-[10px] uppercase font-bold tracking-widest border rounded-sm ${
