@@ -152,4 +152,95 @@ router.post('/register', async (req: Request, res: Response) => {
   res.status(201).json({ message: 'Admin created successfully', username: admin.username });
 });
 
+// ═══════════════════════════════════════════════════════════════
+// ONE-TIME EMERGENCY PASSWORD RESET ENDPOINTS
+// ═══════════════════════════════════════════════════════════════
+
+// Check status of one-time password reset
+router.get('/reset-password/status', async (req: Request, res: Response) => {
+  const admin = await prisma.admin.findFirst();
+  if (!admin) {
+    return res.status(404).json({ available: false, message: 'No admin account found in the system.' });
+  }
+
+  if (admin.passwordResetUsed) {
+    return res.json({
+      available: false,
+      message: 'This one-time password reset link has already been used and is permanently disabled.',
+      resetAt: admin.passwordResetAt,
+    });
+  }
+
+  return res.json({
+    available: true,
+    username: admin.username,
+    message: 'One-time password reset is available.',
+  });
+});
+
+// Execute one-time password reset
+router.post('/reset-password', async (req: Request, res: Response) => {
+  const admin = await prisma.admin.findFirst();
+  if (!admin) {
+    return res.status(404).json({ error: 'No admin account found to reset.' });
+  }
+
+  if (admin.passwordResetUsed) {
+    return res.status(403).json({
+      error: 'This one-time password reset link has already been used and is permanently disabled.',
+    });
+  }
+
+  const { newPassword, confirmPassword } = req.body;
+
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.trim().length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+  }
+
+  if (confirmPassword && newPassword !== confirmPassword) {
+    return res.status(400).json({ error: 'Passwords do not match.' });
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword.trim(), 10);
+
+  // Permanently mark reset as used, update password, and revoke any active sessions
+  await prisma.admin.update({
+    where: { id: admin.id },
+    data: {
+      passwordHash,
+      passwordResetUsed: true,
+      passwordResetAt: new Date(),
+      activeSessionId: null,
+    },
+  });
+
+  // Force-disconnect any active admin sockets
+  const io = req.app.get('io');
+  if (io) {
+    try {
+      const adminNs = io.of('/admin');
+      adminNs.emit('admin:force_logout', {
+        message: 'Admin password has been reset. Please log in with the new credentials.',
+      });
+      adminNs.sockets.forEach((s: any) => {
+        s.disconnect(true);
+      });
+    } catch (err) {
+      console.error('[Auth] Error kicking sockets on password reset:', err);
+    }
+  }
+
+  // Clear cookie
+  res.clearCookie('admin_token', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+  });
+
+  return res.json({
+    success: true,
+    message: 'Password has been reset successfully. The one-time reset is now permanently disabled.',
+  });
+});
+
 export default router;

@@ -3,6 +3,7 @@ import { Landing } from './pages/Landing';
 import { ParticipantLogin } from './pages/participant/ParticipantLogin';
 import { ParticipantDashboard } from './pages/participant/ParticipantDashboard';
 import { AdminLogin } from './pages/admin/AdminLogin';
+import { ResetPassword } from './pages/admin/ResetPassword';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { QuizList } from './pages/admin/QuizList';
@@ -20,6 +21,10 @@ function App() {
         
         {/* Admin Login (without layout) */}
         <Route path="/admin" element={<AdminLogin />} />
+
+        {/* Emergency One-Time Password Reset */}
+        <Route path="/resetpassword" element={<ResetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Admin Protected Routes with Layout */}
         <Route path="/admin" element={<AdminLayout />}>
