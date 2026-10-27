@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { prisma } from '../db';
 
 const router = Router();
@@ -28,49 +29,127 @@ router.post('/login', async (req: Request, res: Response) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
+  // Generate unique session ID for single-active-session enforcement
+  const sessionId = crypto.randomUUID();
+
+  // Store new activeSessionId in database
+  await prisma.admin.update({
+    where: { id: admin.id },
+    data: { activeSessionId: sessionId },
+  });
+
+  // Real-time kickout: disconnect previous admin session(s)
+  const io = req.app.get('io');
+  if (io) {
+    try {
+      const adminNs = io.of('/admin');
+      adminNs.emit('admin:force_logout', {
+        message: 'You have been logged out because this admin account was logged into from another device.',
+        newSessionId: sessionId,
+      });
+      // Terminate any currently open socket connections in /admin
+      adminNs.sockets.forEach((s: any) => {
+        s.disconnect(true);
+      });
+    } catch (err) {
+      console.error('[Auth] Error notifying previous admin sessions:', err);
+    }
+  }
+
   const token = jwt.sign(
-    { id: admin.id, username: admin.username },
+    { id: admin.id, username: admin.username, sessionId },
     JWT_SECRET,
-    { expiresIn: '12h' } // Automatic session expiration
+    { expiresIn: '12h' }
   );
 
   // Set HTTP-only cookie for secure session handling
   res.cookie('admin_token', token, {
     httpOnly: true,
-    secure: true, // Required for sameSite: 'none'
-    sameSite: 'none', // Allows cross-origin cookies (Vercel -> Render)
-    maxAge: 12 * 60 * 60 * 1000 // 12 hours
+    secure: true,
+    sameSite: 'none',
+    maxAge: 12 * 60 * 60 * 1000, // 12 hours
   });
 
-  res.json({ message: 'Login successful', token });
+  res.json({ message: 'Login successful', token, sessionId });
 });
 
 // Admin Logout Route
-router.post('/logout', (req: Request, res: Response) => {
-  res.clearCookie('admin_token');
+router.post('/logout', async (req: Request, res: Response) => {
+  const token = req.cookies?.admin_token || req.headers.authorization?.split(' ')[1];
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { id: string; sessionId?: string };
+      if (decoded.id && decoded.sessionId) {
+        const admin = await prisma.admin.findUnique({
+          where: { id: decoded.id },
+          select: { activeSessionId: true }
+        });
+        if (admin && admin.activeSessionId === decoded.sessionId) {
+          await prisma.admin.update({
+            where: { id: decoded.id },
+            data: { activeSessionId: null },
+          });
+        }
+      }
+    } catch {
+      // Token expired or invalid, ignore
+    }
+  }
+
+  res.clearCookie('admin_token', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+  });
   res.json({ message: 'Logged out successfully' });
 });
 
-// Temporary Setup Route: Create initial admin (Should be disabled in production)
+// Enforce single admin set: only one set of admin credentials can ever be created
 router.post('/setup', async (req: Request, res: Response) => {
-  const { username, email, password } = req.body;
-  
-  const existingAdmin = await prisma.admin.findFirst();
-  if (existingAdmin && process.env.NODE_ENV === 'production') {
-     return res.status(403).json({ error: 'Admin already exists. Setup disabled.' });
+  const count = await prisma.admin.count();
+  if (count > 0) {
+    return res.status(403).json({ error: 'Only one set of admin credentials can be created. An admin account already exists.' });
   }
 
-  const passwordHash = await bcrypt.hash(password || 'echonasecret', 10);
+  const { username, email, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
 
+  const passwordHash = await bcrypt.hash(password, 10);
   const admin = await prisma.admin.create({
     data: {
-      username: username || 'admin',
-      email: email || 'admin@echona.com',
+      username,
+      email: email || `${username}@echona.com`,
       passwordHash,
     }
   });
 
-  res.status(201).json({ message: 'Admin created', username: admin.username });
+  res.status(201).json({ message: 'Admin created successfully', username: admin.username });
+});
+
+// Admin registration endpoint (also enforces single admin rule)
+router.post('/register', async (req: Request, res: Response) => {
+  const count = await prisma.admin.count();
+  if (count > 0) {
+    return res.status(403).json({ error: 'Only one set of admin credentials can be created. An admin account already exists.' });
+  }
+
+  const { username, email, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const admin = await prisma.admin.create({
+    data: {
+      username,
+      email: email || `${username}@echona.com`,
+      passwordHash,
+    }
+  });
+
+  res.status(201).json({ message: 'Admin created successfully', username: admin.username });
 });
 
 export default router;

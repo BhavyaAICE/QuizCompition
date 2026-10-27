@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const AdminLogin: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -9,6 +9,15 @@ export const AdminLogin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [supersededNotice, setSupersededNotice] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('reason') === 'superseded') {
+      setSupersededNotice(true);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (error) {
@@ -209,6 +218,26 @@ export const AdminLogin: React.FC = () => {
           </div>
 
           {/* ═══ FORM ═══ */}
+          {supersededNotice && (
+            <div
+              className="w-full mb-3 p-3 rounded-sm text-center relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(to bottom, rgba(60, 10, 10, 0.95), rgba(35, 5, 5, 0.98))',
+                border: '1.5px solid #C7A04A',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.6)',
+              }}
+            >
+              <div className="flex items-center justify-center gap-1.5 mb-1 text-[#E2C36A] font-bold text-[11px] uppercase tracking-wider" style={{ fontFamily: '"Cinzel", serif' }}>
+                <svg className="w-3.5 h-3.5 text-[#E2C36A]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                SESSION TERMINATED
+              </div>
+              <p className="text-[10px] text-[#F4E7C7]/90 leading-relaxed font-medium">
+                Another device or browser logged into this admin account. Only one administrator can be logged in at a time.
+              </p>
+            </div>
+          )}
           <form onSubmit={handleLogin} className="w-full flex flex-col relative" style={{ gap: '18px' }}>
 
             {/* CREW ID */}

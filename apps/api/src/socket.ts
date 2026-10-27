@@ -8,7 +8,7 @@ export function setupSocketHandlers(io: Server) {
   // ─── Admin Namespace ───
   const adminNs = io.of('/admin');
 
-  adminNs.use((socket, next) => {
+  adminNs.use(async (socket, next) => {
     let token = socket.handshake.auth?.token;
     
     // Fallback to cookie if auth payload is missing
@@ -23,7 +23,15 @@ export function setupSocketHandlers(io: Server) {
 
     if (!token) return next(new Error('No token'));
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { id: string; username: string };
+      const decoded = jwt.verify(token, JWT_SECRET) as { id: string; username: string; sessionId?: string };
+      const admin = await prisma.admin.findUnique({
+        where: { id: decoded.id },
+        select: { id: true, username: true, activeSessionId: true }
+      });
+      if (!admin) return next(new Error('Admin not found'));
+      if (admin.activeSessionId && decoded.sessionId !== admin.activeSessionId) {
+        return next(new Error('SESSION_SUPERSEDED'));
+      }
       (socket as any).admin = decoded;
       next();
     } catch {

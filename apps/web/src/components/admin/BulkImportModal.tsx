@@ -54,8 +54,6 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
       password: row.password || row.Password,
       name: row.name || row.Name,
       college: row.college || row.College || '',
-      email: row.email || row.Email || '',
-      phone: row.phone || row.Phone ? String(row.phone || row.Phone) : '',
     }));
 
     if (participants.some(p => !p.username)) {
@@ -124,15 +122,15 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
     try {
       if (importType === 'participants') {
         const data = [
-          { username: 'crew_jack', password: 'voyage2026', name: 'Jack Sparrow', college: 'Black Pearl Academy', email: 'jack@caribbean.edu', phone: '9876543210' },
-          { username: 'crew_will', password: 'voyage2026', name: 'Will Turner', college: 'Port Royal Institute', email: 'will@portroyal.edu', phone: '9876543211' },
-          { username: 'crew_elizabeth', password: 'voyage2026', name: 'Elizabeth Swann', college: 'Governor High School', email: 'elizabeth@portroyal.edu', phone: '9876543212' },
-          { username: 'crew_hector', password: 'voyage2026', name: 'Hector Barbossa', college: 'Isla de Muerta College', email: 'barbossa@tortuga.org', phone: '9876543213' },
-          { username: 'crew_tia', password: 'voyage2026', name: 'Tia Dalma', college: 'Mystic Bayou University', email: 'tiadalma@calypso.net', phone: '9876543214' }
+          { username: 'crew_jack', password: 'voyage2026', name: 'Jack Sparrow', college: 'Black Pearl Academy' },
+          { username: 'crew_will', password: 'voyage2026', name: 'Will Turner', college: 'Port Royal Institute' },
+          { username: 'crew_elizabeth', password: 'voyage2026', name: 'Elizabeth Swann', college: 'Governor High School' },
+          { username: 'crew_hector', password: 'voyage2026', name: 'Hector Barbossa', college: 'Isla de Muerta College' },
+          { username: 'crew_tia', password: 'voyage2026', name: 'Tia Dalma', college: 'Mystic Bayou University' }
         ];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.json_to_sheet(data);
-        ws['!cols'] = [{ wch: 18 }, { wch: 16 }, { wch: 22 }, { wch: 28 }, { wch: 28 }, { wch: 16 }];
+        ws['!cols'] = [{ wch: 18 }, { wch: 16 }, { wch: 24 }, { wch: 30 }];
         XLSX.utils.book_append_sheet(wb, ws, 'Participants');
         XLSX.writeFile(wb, fileName);
       } else {
@@ -274,7 +272,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
             <p className="text-[#8B5E34] text-[10px] font-bold tracking-[0.2em] uppercase mb-2">Required Format Details</p>
             <p className="text-[#2B1710] text-xs font-semibold">
               {importType === 'participants' 
-                ? 'Expected Columns: username, password, name, college, email, phone'
+                ? 'Expected Columns: username, password, name, college'
                 : 'Expected Columns: text, marks, negativeMarks, option1, option2, option3, option4, correctOption (1-4)'
               }
             </p>

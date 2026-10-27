@@ -248,12 +248,16 @@ router.get('/:quizId/participants', async (req: Request, res: Response) => {
 
 // Single participant creation
 router.post('/:quizId/participants', async (req: Request, res: Response) => {
-  const { username, password, name, college, email, phone } = req.body;
+  const { username, password, name, college } = req.body;
 
   const passwordHash = await bcrypt.hash(password || 'echona2025', 10);
   const participant = await prisma.participant.create({
     data: {
-      username, passwordHash, plainPassword: password || 'echona2025', name, college, email, phone,
+      username,
+      passwordHash,
+      plainPassword: password || 'echona2025',
+      name,
+      college,
       quizId: String(req.params.quizId),
     },
   });
@@ -262,7 +266,7 @@ router.post('/:quizId/participants', async (req: Request, res: Response) => {
 
 // Bulk import participants (for Excel import)
 router.post('/:quizId/participants/bulk', async (req: Request, res: Response) => {
-  const { participants } = req.body; // Array of { username, password, name, college, email, phone }
+  const { participants } = req.body; // Array of { username, password, name, college }
 
   const created = [];
   for (const p of participants) {
@@ -275,8 +279,6 @@ router.post('/:quizId/participants/bulk', async (req: Request, res: Response) =>
           plainPassword: p.password || 'echona2025',
           name: p.name,
           college: p.college,
-          email: p.email,
-          phone: p.phone,
           quizId: String(req.params.quizId),
         },
       });

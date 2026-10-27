@@ -29,7 +29,7 @@ export const QuizManager: React.FC = () => {
 
   const [showParticipantForm, setShowParticipantForm] = useState(false);
   const [newParticipant, setNewParticipant] = useState({
-    username: '', password: '', name: '', college: '', email: '', phone: ''
+    username: '', password: '', name: '', college: ''
   });
 
   const [deleteConfirm, setDeleteConfirm] = useState<{type: 'round'|'participant', id: string} | null>(null);
@@ -154,7 +154,7 @@ export const QuizManager: React.FC = () => {
       });
       if (res.ok) {
         setShowParticipantForm(false);
-        setNewParticipant({ username: '', password: '', name: '', college: '', email: '', phone: '' });
+        setNewParticipant({ username: '', password: '', name: '', college: '' });
         showToast('success', 'CREW MEMBER ADDED', 'Participant successfully signed the manifest.');
         fetchParticipants();
       } else {

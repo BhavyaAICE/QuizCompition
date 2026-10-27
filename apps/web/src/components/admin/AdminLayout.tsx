@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { io } from 'socket.io-client';
 import { CompassRose } from '../icons/CompassRose';
 import { TreasureMap } from '../icons/TreasureMap';
 import { ShipWheel } from '../icons/ShipWheel';
@@ -12,10 +13,66 @@ export const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/logout`, { method: 'POST', credentials: 'include' })
-      .then(() => navigate('/admin'));
+  const getCookie = (name: string) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift();
+    return null;
   };
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/logout`, { method: 'POST', credentials: 'include' })
+      .finally(() => navigate('/admin'));
+  };
+
+  // Real-time single active session enforcement
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token') || getCookie('admin_token');
+    const socket = io(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/admin`, {
+      auth: { token },
+      withCredentials: true,
+      reconnectionAttempts: 5,
+    });
+
+    const triggerSupersededRedirect = () => {
+      localStorage.removeItem('admin_token');
+      navigate('/admin?reason=superseded');
+    };
+
+    socket.on('admin:force_logout', () => {
+      triggerSupersededRedirect();
+    });
+
+    socket.on('connect_error', (err) => {
+      if (err.message === 'SESSION_SUPERSEDED') {
+        triggerSupersededRedirect();
+      }
+    });
+
+    // Intercept fetch responses to catch any 401 SESSION_SUPERSEDED API errors
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const response = await originalFetch(...args);
+      if (response.status === 401) {
+        try {
+          const clone = response.clone();
+          const body = await clone.json();
+          if (body && body.code === 'SESSION_SUPERSEDED') {
+            triggerSupersededRedirect();
+          }
+        } catch {
+          // Ignore JSON parse errors for non-JSON 401s
+        }
+      }
+      return response;
+    };
+
+    return () => {
+      socket.disconnect();
+      window.fetch = originalFetch;
+    };
+  }, [navigate]);
 
   const navItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: <CompassRose className="w-5 h-5 shrink-0" /> },
